@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-framework="backbonejs">
+	<head>
+		<meta charset="utf-8">
+		<title>Todo List</title>
+		<link rel="stylesheet" href="css/style.css"></style>
+	</head>
+	<body class="myTodoApp">
+		<input type="checkbox" class="toggle-all" />
+
+		<input type="text" id="todo_text" placeholder="What needs to be done?" />
+		<ul class="todo-list"></ul>
+		<footer class="footer"></footer>
+
+		<script type="text/template" id="item-template">
+			<div class="view">
+				<input type="checkbox" class="toggle" <%= done ? 'checked' : '' %> />
+				<label><b><%- title %></b> on <%- date_time %></label>
+				<button class="destroy"></button>
+			</div>
+			<input class="edit" value="<%- title %>">
+		</script>
+
+		<script type="text/template" id="stats-template">
+			<span class="todo-count"><strong><%= remaining %></strong> <%= remaining === 1 ? 'item' : 'items' %> left</span>
+			<ul class="filters">
+				<li><a class="selected" href="#/">All</a></li>
+				<li><a href="#/active">Active</a></li>
+				<li><a href="#/done">Done</a></li>
+			</ul>
+			<% if (done) { %><button class="clear-completed">Clear done</button><% } %>
+		</script>
+
+		<script src="js/jquery.js"></script>
+		<script src="js/underscore.js"></script>
+		<script src="js/backbone.js"></script>
+		<script src="js/backbone.localStorage.js"></script>
+		<script src="js/todoApp.js"></script>
+	</body>
+</html>
