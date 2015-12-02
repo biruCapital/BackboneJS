@@ -1,77 +1,50 @@
-var contact;
-var templates = ['contactTemplate'];
-var tplArr = {};
+window.App = {
+	Models      : {},
+	Collections : {},
+	Views       : {}
+},
+window.templates     = {};
+window.templateNames = [ 'contactTemplate' , 'addTemplate' ];
+
+window.contacts  = [];
 
 function loadTemplate(){
-	
-	if( templates.length > 0 ){
-		$.each(templates, function(index, view) {
-			if( tplArr[view] != undefined ){
+	$.each( templateNames, function( ind, templateName ){
+		$.ajax({
+			url      : 'templates/' + templateName + '.html',
+			method   : "GET",
+			async    : false,
+			dataType : 'html',
+			success  : function(data){
+				templates[templateName] = data;
+			},
 
-				//console.log(tplArr[view]);
-
-				tplArr[view].prototype.template = $.get('templates/' + view + '.html', function(data) {
-					return _.template(data);
-		        });
-		    } else {
-		    	tplArr[view] = "";
-		    	//tplArr = tplArr[view];
-		    }
-    	});
-    	console.log(tplArr);	
-	}
-
-	return tplArr;
+			error: function( result ) {
+				
+			}
+		});
+	});
+	return templates;
 }
 
+function getTemplate( templateName ){
+	return templates[templateName];
+}
 
 (function($){
-	var views = {};
-	/*var a = function(){
-		console.log("Hello");
-	};
 
-	var b = function(){
-		a = a();
-	} 
+	loadTemplate();
 
-	b();*/
-
-
-	/*function person(first, last, age, eyecolor) {
-	    this.firstName = first;
-	    this.lastName  = last;
-	    this.age       = age;
-	    this.eyeColor  = eyecolor;
-	}*/
-
-	//var myFather = new person("John", "Doe", 50, "blue");
-	//var myMother = new person("Sally", "Rally", 48, "green");
-	
-	var tpl = loadTemplate();
-	//console.log(tpl);
-
-
-
-	
-
-	contact = [
-		{ id : "001", name : "Bireshwar Goswami",      phone : "8013788399", mail : "bireshwar@capitalnumbers.com", address : "Chinsurah, Hooghly" },
-		{ id : "002", name : "Saptarshi Banerjee",     phone : "9876546121", mail : "saptarshi@capitalnumbers.com", address : "Ballygaunj, Kolkata" },
-		{ id : "003", name : "Arani Manna",            phone : "8015456349", mail : "arani@capitalnumbers.com",     address : "Tamluk, Medinipur" },
-		{ id : "004", name : "Soumendu Hazra",         phone : "7856453676", mail : "soumendu.hazra@gmail.com",     address : "Chinsurah, Hooghly" },
-		{ id : "005", name : "Anindya Roy",            phone : "9874560987", mail : "anindyaroy1991@gmail.com",     address : "Siliguri, Jalpaguri" },
-		{ id : "006", name : "Bidhan Baral",           phone : "9038452319", mail : "bidhan64.gmail.com",           address : "Thaurpukur, Kolkata" },
-		{ id : "007", name : "Anindita Bhattacharyya", phone : "8981657654", mail : "annie3988@gmail.com",          address : "Chinsurah, Hooghly" },
-	];
-
-
-
-
-	// Model 
-	var Contact = Backbone.Model.extend({
+	// Contact Model 
+	App.Models.Contact = Backbone.Model.extend({
 		initialize : function(){
-			//console.log("hii");
+			//console.log(this);
+
+		},
+
+		validate   : function(attributes){
+			console.log("Hello");
+			return false;
 		},
 
 		defaults : {
@@ -79,52 +52,122 @@ function loadTemplate(){
 		}
 	});
 
-	// Collection
-	var Directory = Backbone.Collection.extend({
-		model : Contact
-	});
-
-	// View
-	var ContactView =  Backbone.View.extend({
-		tagName    : 'article',
-		className  : 'contact-container',
-		template   : $('#contactTemplate').html(),
+	// Directory Collection
+	App.Collections.Directory = Backbone.Collection.extend({
+		model : App.Models.Contact,
 
 		initialize : function(){
+			//this.bind('remove', this.onModelRemoved, this);
 		},
-
-		render     : function(){
-			var tpl = _.template(this.template);
-			this.$el.html(tpl(this.model.toJSON()));
-			return this;
+		
+		onModelRemoved : function( model, collection, options ){
+			console.log("Hello");
 		}
 	});
 
-	// View
-	var DirectoryView = Backbone.View.extend({
+	// Contact View
+	App.Views.ContactView =  Backbone.View.extend({
+		tagName    : 'article',
+		className  : 'contact-container',
+		template   : getTemplate('contactTemplate'),
+		events     : {
+			'click #edit'   : 'editForm',
+			'click #delete' : 'deleteEmployee'
+		},
+
+		initialize : function(){
+			
+		},
+
+		render     : function(){
+			var tpl = _.template( this.template );
+			this.$el.html(tpl(this.model.toJSON()));
+			return this;
+		},
+
+		deleteEmployee : function(){
+			if( confirm('Are you sure to delete!') ){
+				if( dir.indexOf(this.model) != -1 ) {
+					dir.remove(dir.at(dir.indexOf(this.model)));
+					console.log(this.$el.remove());
+				}
+			}
+		}
+	});
+
+	// Directory View
+	App.Views.DirectoryView = Backbone.View.extend({
 		el          : $('#contacts'),
 		initialize  : function(){
-			this.contacts = new Directory(contact);
-			//console.log( this.t );
+			this.contacts = dir;
+			this.collection.on('add',this.addContact,this);
+			//this.collection.bind('remove', this.removeContact, this);
 
 
 			this.render();
 		},
 
 		render      : function(){
-			this.renderContact( this );
+			this.collection.each( this.addContact, this );
+			return this;
 		},
 
-		renderContact  : function ( object ){
-			_.each( object.contacts.models, function( list, iterator, context ){
-				//console.log( list );
-				//console.log( iterator );
-				//console.log( context );
-				var contactView = new ContactView({ model: list });
-				object.$el.append( contactView.render().el );
-			});
-		},	
+		addContact  : function(contactModel){
+			var contactView = new App.Views.ContactView({model: contactModel});
+			this.$el.append(contactView.render().el);
+		},
+
+		removeContact : function( model, collection, options ){
+			var template = _.template(getTemplate('contactTemplate'));
+
+			//console.log($(template(model.toJSON())));
+
+			//$(template(model.toJSON())).remove();
+		}
 	});
 
-	new DirectoryView();
+	// Contact Form View
+	App.Views.contactFormView = Backbone.View.extend({
+		el         : $('#contactForm'),
+		events     : {
+			'click #submitForm' : 'createEmployee'
+		},
+
+		initialize : function(){
+			this.$name      = this.$('#name');
+			this.$address   = this.$('#address');
+			this.$phone     = this.$('#phone');
+			this.$mail     = this.$('#mail');
+		},
+
+		createEmployee : function(){
+			var length = this.collection.length + 1;
+			var str    = ( length > 9 ) ? '0' : '00';
+
+			if( this.$name.val() && this.$phone.val() && this.$mail.val() && this.$address.val() ){
+				dir.add(new App.Models.Contact({
+					id      : str + length.toString(), 
+					name    : this.$name.val(),      
+					phone   : this.$phone.val(), 
+					mail    : this.$mail.val(), 
+					address : this.$address.val()
+				}));
+
+				this.resetContactForm();
+			}
+		},
+
+		resetContactForm : function(){
+			this.$name.val('');
+			this.$address.val('');
+			this.$phone.val('');
+			this.$mail.val('');
+		}
+	});
+	
+	var contactModel = new App.Models.Contact();
+	var dir = new App.Collections.Directory(contacts);
+	new App.Views.contactFormView({ collection : dir });
+	new App.Views.DirectoryView({ collection : dir });
+
 })(jQuery);
